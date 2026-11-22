@@ -13,7 +13,6 @@ import android.text.InputType
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 
@@ -33,7 +32,6 @@ class MainActivity : Activity() {
         )
         requestPermissions(permissions, 101)
 
-        // যদি পূর্বে ইউআরএল ও কি সেভ করা থাকে, সরাসরি রানিং ভিউ দেখাবে
         val savedUrl = prefs.getString("server_url", null)
         val savedKey = prefs.getString("secret_key", null)
 
@@ -44,7 +42,6 @@ class MainActivity : Activity() {
         }
     }
 
-    // ১. কনফিগারেশন পেজ
     private fun showSettingsView() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -69,7 +66,6 @@ class MainActivity : Activity() {
             text = "SERVER WEBHOOK URL"
             textSize = 12f
             setTextColor(Color.parseColor("#94A3B8"))
-            letterSpacing = 0.05f
             setPadding(0, 10, 0, 10)
         }
         root.addView(urlLabel)
@@ -83,7 +79,6 @@ class MainActivity : Activity() {
             text = "API / SECRET KEY"
             textSize = 12f
             setTextColor(Color.parseColor("#94A3B8"))
-            letterSpacing = 0.05f
             setPadding(0, 30, 0, 10)
         }
         root.addView(keyLabel)
@@ -136,7 +131,6 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
-    // ২. সার্ভিস রানিং স্ট্যাটাস পেজ
     private fun showActiveRunningView() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -149,20 +143,23 @@ class MainActivity : Activity() {
             )
         }
 
-        val iconContainer = ImageView(this).apply {
-            setImageResource(android.R.drawable.stat_sys_upload_done)
-            setColorFilter(Color.parseColor("#22C55E"))
+        // নিরাপদ টেক্সট ব্যাজ আইকন (কোনো সিস্টেম রিসোর্স ঝামেলা ছাড়াই)
+        val iconBadge = TextView(this).apply {
+            text = "✓"
+            textSize = 50f
+            setTextColor(Color.parseColor("#22C55E"))
+            gravity = Gravity.CENTER
+            typeface = Typeface.DEFAULT_BOLD
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(Color.parseColor("#14532D"))
-                setStroke(4, Color.parseColor("#22C55E"))
+                setStroke(6, Color.parseColor("#22C55E"))
             }
-            setPadding(40, 40, 40, 40)
             layoutParams = LinearLayout.LayoutParams(220, 220).apply {
                 setMargins(0, 0, 0, 40)
             }
         }
-        root.addView(iconContainer)
+        root.addView(iconBadge)
 
         val statusTitle = TextView(this).apply {
             text = "Service is Running"
@@ -179,7 +176,6 @@ class MainActivity : Activity() {
             setTextColor(Color.parseColor("#94A3B8"))
             gravity = Gravity.CENTER
             setPadding(0, 16, 0, 50)
-            lineSpacingMultiplier = 1.3f
         }
         root.addView(statusDesc)
 
