@@ -2,77 +2,29 @@ package com.spdigitalit.pay
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
+import android.content.SharedPreferences
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.InputType
+import android.view.Gravity
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 
 class MainActivity : Activity() {
+
+    private lateinit var prefs: SharedPreferences
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val prefs = getSharedPreferences("SpPayConfig", Context.MODE_PRIVATE)
-
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 60, 50, 60)
-        }
-
-        val title = TextView(this).apply {
-            text = "SpDigitalPay Settings"
-            textSize = 22f
-            setPadding(0, 0, 0, 30)
-        }
-        layout.addView(title)
-
-        // সার্ভার লিংক ইনপুট
-        val urlLabel = TextView(this).apply { text = "Server Webhook URL:" }
-        layout.addView(urlLabel)
-
-        val urlInput = EditText(this).apply {
-            hint = "https://yourdomain.com/api/verify.php"
-            setText(prefs.getString("server_url", "https://spdigitalit.xyz/api/verify.php"))
-            setPadding(20, 20, 20, 30)
-        }
-        layout.addView(urlInput)
-
-        // সিক্রেট কি ইনপুট
-        val keyLabel = TextView(this).apply { text = "API / Secret Key:" }
-        layout.addView(keyLabel)
-
-        val keyInput = EditText(this).apply {
-            hint = "Enter Secret Key"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setText(prefs.getString("secret_key", "MY_SECURE_PAY_KEY_123"))
-            setPadding(20, 20, 20, 30)
-        }
-        layout.addView(keyInput)
-
-        // সেভ বাটন
-        val saveBtn = Button(this).apply {
-            text = "Save Configuration"
-            setOnClickListener {
-                val url = urlInput.text.toString().trim()
-                val key = keyInput.text.toString().trim()
-
-                if (url.isEmpty() || key.isEmpty()) {
-                    Toast.makeText(this@MainActivity, "URL এবং Key দুটিই পূরণ করুন", Toast.LENGTH_SHORT).show()
-                } else {
-                    prefs.edit()
-                        .putString("server_url", url)
-                        .putString("secret_key", key)
-                        .apply()
-                    Toast.makeText(this@MainActivity, "সেটিংস সফলভাবে সংরক্ষিত হয়েছে!", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-        layout.addView(saveBtn)
-
-        setContentView(layout)
+        prefs = getSharedPreferences("SpPayConfig", Context.MODE_PRIVATE)
 
         // পারমিশন চাওয়া
         val permissions = arrayOf(
@@ -81,5 +33,202 @@ class MainActivity : Activity() {
             Manifest.permission.POST_NOTIFICATIONS
         )
         requestPermissions(permissions, 101)
+
+        // যদি পূর্বে ইউআরএল ও কি সেভ করা থাকে, সরাসরি রানিং ভিউ দেখাবে
+        val savedUrl = prefs.getString("server_url", null)
+        val savedKey = prefs.getString("secret_key", null)
+
+        if (!savedUrl.isNullOrEmpty() && !savedKey.isNullOrEmpty()) {
+            showActiveRunningView()
+        } else {
+            showSettingsView()
+        }
+    }
+
+    // ১. সেটিংস পেজ (ডার্ক থিম ও ক্লিন ইনপুট)
+    private fun showSettingsView() {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#121824"))
+            setPadding(60, 80, 60, 60)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        val title = TextView(this).apply {
+            text = "SpDigitalPay Settings"
+            textSize = 24f
+            setTextColor(Color.parseColor("#38BDF8"))
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 0, 0, 40)
+        }
+        root.addView(title)
+
+        val urlLabel = TextView(this).apply {
+            text = "SERVER WEBHOOK URL"
+            textSize = 12f
+            setTextColor(Color.parseColor("#94A3B8"))
+            letterSpacing = 0.05f
+            setPadding(0, 10, 0, 10)
+        }
+        root.addView(urlLabel)
+
+        val urlInput = createStyledInput("https://spdigitalit.xyz/api/verify.php", false).apply {
+            setText(prefs.getString("server_url", "https://spdigitalit.xyz/api/verify.php"))
+        }
+        root.addView(urlInput)
+
+        val keyLabel = TextView(this).apply {
+            text = "API / SECRET KEY"
+            textSize = 12f
+            setTextColor(Color.parseColor("#94A3B8"))
+            letterSpacing = 0.05f
+            setPadding(0, 30, 0, 10)
+        }
+        root.addView(keyLabel)
+
+        val keyInput = createStyledInput("Enter Secret Key", true).apply {
+            setText(prefs.getString("secret_key", ""))
+        }
+        root.addView(keyInput)
+
+        val saveBtn = Button(this).apply {
+            text = "Save & Activate"
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#0EA5E9"))
+                cornerRadius = 16f
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 50, 0, 0)
+            }
+            setOnClickListener {
+                val url = urlInput.text.toString().trim()
+                val key = keyInput.text.toString().trim()
+
+                if (url.isEmpty() || key.isEmpty()) {
+                    showDialog("সতর্কতা", "URL এবং Secret Key দুটিই প্রদান করুন।")
+                } else {
+                    prefs.edit()
+                        .putString("server_url", url)
+                        .putString("secret_key", key)
+                        .apply()
+
+                    // সুন্দর কনফার্মেশন অ্যালার্ট এবং রানিং স্ক্রিনে রিডাইরেক্ট
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle("সফল হয়েছে!")
+                        .setMessage("কনফিগারেশন সফলভাবে সংরক্ষিত হয়েছে। সার্ভিস এখন ব্যাকগ্রাউন্ডে সক্রিয়।")
+                        .setPositiveButton("ঠিক আছে") { _, _ ->
+                            showActiveRunningView()
+                        }
+                        .setCancelable(false)
+                        .show()
+                }
+            }
+        }
+        root.addView(saveBtn)
+
+        setContentView(root)
+    }
+
+    // ২. অ্যাপ রানিং পেজ (মাঝখানে লাইভ স্ট্যাটাস ও আইকন)
+    private fun showActiveRunningView() {
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.parseColor("#0F172A")) // ডিপ ডার্ক ব্যাকগ্রাউন্ড
+            setPadding(60, 60, 60, 60)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        // সেন্টার বৃত্তাকার আইকন
+        val iconContainer = ImageView(this).apply {
+            setImageResource(android.R.drawable.stat_sys_upload_done)
+            setColorFilter(Color.parseColor("#22C55E")) // নিয়ন গ্রিন
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#14532D")) // ডার্ক গ্রিন ব্যাকড্রপ
+                setStroke(4, Color.parseColor("#22C55E"))
+            }
+            setPadding(40, 40, 40, 40)
+            layoutParams = LinearLayout.LayoutParams(220, 220).apply {
+                setMargins(0, 0, 0, 40)
+            }
+        }
+        root.addView(iconContainer)
+
+        val statusTitle = TextView(this).apply {
+            text = "Service is Running"
+            textSize = 22f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+        }
+        root.addView(statusTitle)
+
+        val statusDesc = TextView(this).apply {
+            text = "SpDigitalPay ব্যাকগ্রাউন্ডে সক্রিয় রয়েছে।\nইনকামিং এসএমএস স্বয়ংক্রিয়ভাবে সার্ভারে পাঠানো হবে।"
+            textSize = 14f
+            setTextColor(Color.parseColor("#94A3B8"))
+            gravity = Gravity.CENTER
+            setPadding(0, 16, 0, 50)
+            lineSpacingMultiplier = 1.3f
+        }
+        root.addView(statusDesc)
+
+        // সেটিংস পরিবর্তনের বাটন
+        val editBtn = Button(this).apply {
+            text = "Edit Settings"
+            setTextColor(Color.parseColor("#38BDF8"))
+            textSize = 14f
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#1E293B"))
+                cornerRadius = 14f
+                setStroke(2, Color.parseColor("#334155"))
+            }
+            setPadding(40, 20, 40, 20)
+            setOnClickListener {
+                showSettingsView()
+            }
+        }
+        root.addView(editBtn)
+
+        setContentView(root)
+    }
+
+    private fun createStyledInput(hintText: String, isPassword: Boolean): EditText {
+        return EditText(this).apply {
+            hint = hintText
+            setHintTextColor(Color.parseColor("#475569"))
+            setTextColor(Color.WHITE)
+            textSize = 15f
+            if (isPassword) {
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#1E293B"))
+                cornerRadius = 14f
+                setStroke(2, Color.parseColor("#334155"))
+            }
+            setPadding(35, 35, 35, 35)
+        }
+    }
+
+    private fun showDialog(title: String, msg: String) {
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(msg)
+            .setPositiveButton("ঠিক আছে", null)
+            .show()
     }
 }
