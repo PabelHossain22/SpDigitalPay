@@ -21,24 +21,33 @@ class SmsReceiver : BroadcastReceiver() {
 
                 val allowedSenders = listOf("bKash", "Nagad", "NAGAD", "Rocket", "16216")
                 if (allowedSenders.any { sender.contains(it, ignoreCase = true) }) {
-                    sendToServer(sender, body)
+                    sendToServer(context, sender, body)
                 }
             }
         }
     }
 
-    private fun sendToServer(sender: String, body: String) {
+    private fun sendToServer(context: Context, sender: String, body: String) {
+        val prefs = context.getSharedPreferences("SpPayConfig", Context.MODE_PRIVATE)
+        val serverUrl = prefs.getString("server_url", null)
+        val secretKey = prefs.getString("secret_key", null)
+
+        // যদি URL বা Key সেট করা না থাকে তবে রিকোয়েস্ট যাবে না
+        if (serverUrl.isNullOrEmpty() || secretKey.isNullOrEmpty()) {
+            return
+        }
+
         thread {
             try {
                 val client = OkHttpClient()
                 val json = JSONObject().apply {
                     put("sender", sender)
                     put("raw_sms", body)
-                    put("secret_key", "MY_SECURE_PAY_KEY_123")
+                    put("secret_key", secretKey)
                 }
                 val requestBody = json.toString().toRequestBody("application/json".toMediaType())
                 val request = Request.Builder()
-                    .url("https://spdigitalit.xyz/api/verify.php")
+                    .url(serverUrl)
                     .post(requestBody)
                     .build()
 
