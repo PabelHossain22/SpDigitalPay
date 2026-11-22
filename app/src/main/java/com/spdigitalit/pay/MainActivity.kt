@@ -11,7 +11,6 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
-import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -45,7 +44,7 @@ class MainActivity : Activity() {
         }
     }
 
-    // ১. সেটিংস পেজ (ডার্ক থিম ও ক্লিন ইনপুট)
+    // ১. কনফিগারেশন পেজ
     private fun showSettingsView() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -114,17 +113,16 @@ class MainActivity : Activity() {
                 val key = keyInput.text.toString().trim()
 
                 if (url.isEmpty() || key.isEmpty()) {
-                    showDialog("সতর্কতা", "URL এবং Secret Key দুটিই প্রদান করুন।")
+                    showDialog("সতর্কতা", "URL এবং Secret Key দুটিই পূরণ করুন।")
                 } else {
                     prefs.edit()
                         .putString("server_url", url)
                         .putString("secret_key", key)
                         .apply()
 
-                    // সুন্দর কনফার্মেশন অ্যালার্ট এবং রানিং স্ক্রিনে রিডাইরেক্ট
                     AlertDialog.Builder(this@MainActivity)
                         .setTitle("সফল হয়েছে!")
-                        .setMessage("কনফিগারেশন সফলভাবে সংরক্ষিত হয়েছে। সার্ভিস এখন ব্যাকগ্রাউন্ডে সক্রিয়।")
+                        .setMessage("কনফিগারেশন সংরক্ষিত হয়েছে। সার্ভিস ব্যাকগ্রাউন্ডে সক্রিয়।")
                         .setPositiveButton("ঠিক আছে") { _, _ ->
                             showActiveRunningView()
                         }
@@ -138,12 +136,12 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
-    // ২. অ্যাপ রানিং পেজ (মাঝখানে লাইভ স্ট্যাটাস ও আইকন)
+    // ২. সার্ভিস রানিং স্ট্যাটাস পেজ
     private fun showActiveRunningView() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#0F172A")) // ডিপ ডার্ক ব্যাকগ্রাউন্ড
+            setBackgroundColor(Color.parseColor("#0F172A"))
             setPadding(60, 60, 60, 60)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -151,13 +149,12 @@ class MainActivity : Activity() {
             )
         }
 
-        // সেন্টার বৃত্তাকার আইকন
         val iconContainer = ImageView(this).apply {
             setImageResource(android.R.drawable.stat_sys_upload_done)
-            setColorFilter(Color.parseColor("#22C55E")) // নিয়ন গ্রিন
+            setColorFilter(Color.parseColor("#22C55E"))
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.parseColor("#14532D")) // ডার্ক গ্রিন ব্যাকড্রপ
+                setColor(Color.parseColor("#14532D"))
                 setStroke(4, Color.parseColor("#22C55E"))
             }
             setPadding(40, 40, 40, 40)
@@ -177,7 +174,7 @@ class MainActivity : Activity() {
         root.addView(statusTitle)
 
         val statusDesc = TextView(this).apply {
-            text = "SpDigitalPay ব্যাকগ্রাউন্ডে সক্রিয় রয়েছে।\nইনকামিং এসএমএস স্বয়ংক্রিয়ভাবে সার্ভারে পাঠানো হবে।"
+            text = "SpDigitalPay ব্যাকগ্রাউন্ডে সক্রিয় রয়েছে।\nইনকামিং এসএমএস স্বয়ংক্রিয়ভাবে সার্ভারে পাঠানো হবে।"
             textSize = 14f
             setTextColor(Color.parseColor("#94A3B8"))
             gravity = Gravity.CENTER
@@ -186,7 +183,6 @@ class MainActivity : Activity() {
         }
         root.addView(statusDesc)
 
-        // সেটিংস পরিবর্তনের বাটন
         val editBtn = Button(this).apply {
             text = "Edit Settings"
             setTextColor(Color.parseColor("#38BDF8"))
